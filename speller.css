@@ -1,0 +1,20 @@
+/* ERROR_UNKNOWN_WORD */
+abbr.dashed-red {
+    border-bottom: 1px dashed red;
+    text-decoration: none;
+}
+/* ERROR_REPEAT_WORD */
+abbr.dashed-navy {
+    border-bottom: 1px dashed navy;
+    text-decoration: none;
+}
+/* ERROR_CAPITALIZATION */
+abbr.dashed-orange {
+    border-bottom: 1px dashed orange;
+    text-decoration: none;
+}
+/* ERROR_TOO_MANY_ERRORS */
+abbr.dotted-red {
+    border-bottom: 2px dashed red;
+    text-decoration: none;
+}

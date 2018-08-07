@@ -11,6 +11,12 @@
         IGNORE_CAPITALIZATION = 512,
         // speller languages: "[en],[ru],[ua]"
         // speller formats:   "plain | html"
+        
+        // returned codes
+        ERROR_UNKNOWN_WORD = 1,
+        ERROR_REPEAT_WORD = 2,
+        ERROR_CAPITALIZATION = 3,
+        ERROR_TOO_MANY_ERRORS = 4,
     
         // see the spellservice documentation
         SERVICE = 'https://speller.yandex.net/services/spellservice.json/checkText?',
@@ -94,10 +100,10 @@
             // returns amount of sent bytes or zero if max-length exceeded
             this.sendRequest = function (text, tagIndx, tagNmbr) {
                 var xhr = new XMLHttpRequest(), 
-                    params = SERVICE + 'text=' + encodeURIComponent(text);
+                    params = SERVICE;
                 
-                params += '&lang=' + this.lang + '&options=' + this.opts + 
-                    '&format=' + this.format;
+                params += 'lang=' + this.lang + '&options=' + this.opts + 
+                    '&format=' + this.format + '&text=' + encodeURIComponent(text);
                 if (params.length > MAX_REQUEST_LEN) 
                     return 0; // the text is too big!
                 
@@ -136,6 +142,12 @@
             
             // highlights spells in browser
             this.highlightSpells = function (result, tagIndx, tagNmbr) {
+                if (!result || result.length == 0 || 
+                    !(typeof(tagIndx) == 'number') || !(typeof(tagNmbr) == 'number'))
+                {
+                    return;
+                }
+                
                 if (this.dbgLvl > 0) {
                     var spells = '';
                     for (var i = 0; i < result.length; ++i)
@@ -143,6 +155,45 @@
                     console.log(spells);
                 }
                 
+                var elem = this.textTags[tagIndx].collection[tagNmbr],
+                    elemText = elem.innerHTML, 
+                    spellIndx = 0;
+                for (var i = 0; i < result.length; ++i) {
+                    var hint = ''; // string of correction words
+                    for (var j = 0; j < result[i].s.length; ++j) {
+                        hint += ((j == 0) ? '' : ', ') + result[i].s[j];
+                    }
+                    
+                    var spellType = 'class="';
+                    switch (result[i].code) {
+                        case ERROR_UNKNOWN_WORD:
+                            spellType += 'dashed-red"';
+                            break;
+                        case ERROR_REPEAT_WORD:
+                            spellType += 'dashed-navy"';
+                            alert('ERROR_REPEAT_WORD');  // test
+                            break;
+                        case ERROR_CAPITALIZATION:
+                            spellType += 'dashed-orange"';
+                            alert('ERROR_CAPITALIZATION');  // test
+                            break;
+                        case ERROR_TOO_MANY_ERRORS:
+                            spellType += 'sdotted-red"';
+                            alert('ERROR_TOO_MANY_ERRORS');  // test
+                            break;
+                        default:
+                            spellType += '"';
+                    }
+                    
+                    spellIndx = elemText.indexOf(result[i].word);
+                    if (spellIndx < 0)
+                        continue; // just in case
+                    elemText = elemText.substr(0, spellIndx) + 
+                        '<abbr ' + spellType + ' title="' + hint + '">' + 
+                        result[i].word + '</abbr>' + 
+                        elemText.substr(spellIndx + result[i].word.length);
+                }
+                elem.innerHTML = elemText;
             }
             
             // spell-checks all the document with textTags array 
@@ -182,7 +233,11 @@
     // start the speller job at onload event
     window.addEventListener('load', function () {
         var speller = new YaSpeller(
-            'ru,en', 14, 'plain', false, 1
+            'ru,en',    // lenguage set
+            14,         // options, it looks like that doesn't matter!
+            'html',     // text type
+            false,      // lazy checkout
+            1           // level of console debug message
         );
         speller.initInstance();
     });
